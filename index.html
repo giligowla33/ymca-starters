@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>聽音拼字 - YMCA Starters</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{min-height:100vh;background:linear-gradient(135deg,#f5f0ff 0%,#e8f4ff 50%,#f5fff8 100%);font-family:'Nunito',sans-serif;padding:24px 16px 48px;}
+    #app{display:flex;flex-direction:column;align-items:center;max-width:500px;margin:0 auto;}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+    @keyframes popIn{0%{transform:scale(0.6);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+    @keyframes correctPop{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
+    @keyframes cfFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+    @keyframes slideUp{0%{transform:translateY(24px);opacity:0}100%{transform:translateY(0);opacity:1}}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+    .float{animation:float 2.8s ease-in-out infinite;display:inline-block;}
+    h1{font-family:'Fredoka One',cursive;font-size:46px;background:linear-gradient(135deg,#6c63ff,#fd79a8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;}
+    h2{font-family:'Fredoka One',cursive;font-size:22px;color:#b8b0d8;letter-spacing:3px;}
+    .unit-card{border-radius:20px;padding:16px;cursor:pointer;transition:transform .18s,box-shadow .18s;display:flex;align-items:center;gap:14px;width:100%;border:2px solid rgba(0,0,0,0.08);animation:slideUp .3s ease both;margin-bottom:10px;}
+    .unit-card:hover{transform:translateY(-4px) scale(1.02);}
+    .unit-card:active{transform:scale(0.97);}
+    .unit-label{font-family:'Fredoka One',cursive;font-size:17px;line-height:1.2;}
+    .unit-sub{font-size:13px;color:#888;margin-top:2px;}
+    .start-tag{font-family:'Fredoka One',cursive;font-size:13px;color:#fff;border-radius:10px;padding:4px 12px;white-space:nowrap;}
+    .card{border-radius:28px;padding:28px 36px;width:100%;max-width:440px;text-align:center;animation:popIn .4s ease;margin-bottom:20px;}
+    .card-zh{font-family:'Fredoka One',cursive;font-size:36px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.18);line-height:1.1;}
+    .card-sub{font-size:12px;color:rgba(255,255,255,0.75);margin-top:6px;font-weight:700;}
+    .speak-btn{font-family:'Fredoka One',cursive;border:none;border-radius:18px;padding:13px 26px;cursor:pointer;font-size:17px;display:flex;align-items:center;gap:8px;transition:transform .15s,box-shadow .15s;margin-bottom:24px;}
+    .speak-btn:hover{transform:scale(1.06);}
+    .pulsing{animation:pulse .6s ease-in-out infinite;}
+    .boxes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:440px;margin-bottom:12px;}
+    .letter-box{width:50px;height:58px;border-radius:14px;font-family:'Fredoka One',cursive;font-size:24px;text-align:center;border:3px solid #d8d8f0;outline:none;background:#fff;color:#333;transition:border-color .2s,background .2s,transform .15s;caret-color:transparent;text-transform:uppercase;}
+    .letter-box:focus{border-color:#6c63ff;background:#f8f7ff;transform:scale(1.1);}
+    .letter-box.correct{background:#d5f5e3;border-color:#27ae60;color:#1a7a40;animation:correctPop .3s ease;}
+    .letter-box.shake{animation:shake .45s ease;background:#fde8e8;border-color:#e74c3c;}
+    .hint{font-size:13px;color:#b0b8d0;font-weight:700;}
+    .stars-hint{font-size:13px;color:#c0c8d8;margin-top:8px;}
+    .word-done{font-family:'Fredoka One',cursive;font-size:26px;margin-top:16px;animation:popIn .3s ease;}
+    .progress-bar-bg{width:100%;max-width:440px;height:9px;background:#eee;border-radius:8px;margin-bottom:24px;overflow:hidden;}
+    .progress-bar{height:100%;border-radius:8px;transition:width .5s ease;}
+    .topbar{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:14px;}
+    .nbtn{font-family:'Fredoka One',cursive;font-size:16px;border:none;border-radius:14px;padding:10px 22px;cursor:pointer;transition:transform .15s;}
+    .nbtn:hover{transform:scale(1.05);}
+    .result-box{border-radius:24px;padding:20px 32px;margin:16px 0;display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;max-width:440px;}
+    .result-score{font-family:'Fredoka One',cursive;font-size:52px;}
+    .confetti-container{position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;}
+    .confetti-piece{position:absolute;top:-20px;border-radius:3px;}
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ══ 單字資料 ══
+const RAW = [
+  {w:"computer",z:"電腦",p:17,t:"School-3"},{w:"wall",z:"牆",p:17,t:"School-3"},
+  {w:"door",z:"門",p:17,t:"School-3"},{w:"sit",z:"坐",p:17,t:"School-3"},
+  {w:"crayon",z:"蠟筆",p:17,t:"School-3"},{w:"board",z:"黑板",p:17,t:"School-3"},
+  {w:"music",z:"音樂",p:17,t:"School-3"},{w:"right",z:"對的",p:17,t:"School-3"},
+  {w:"keyboard",z:"鍵盤",p:17,t:"School-3"},{w:"paper",z:"紙",p:17,t:"School-3"},
+  {w:"alphabet",z:"字母",p:17,t:"School-3"},{w:"mouse",z:"滑鼠",p:17,t:"School-3"},
+  {w:"understand",z:"了解",p:17,t:"School-3"},{w:"stand",z:"站",p:17,t:"School-3"},
+  {w:"poster",z:"海報",p:17,t:"School-3"},{w:"sentence",z:"句子",p:17,t:"School-3"},
+  {w:"painting",z:"水彩畫",p:17,t:"School-3"},{w:"desk",z:"書桌",p:17,t:"School-3"},
+  {w:"sing",z:"唱歌",p:18,t:"Sports & Leisure-1"},{w:"kite",z:"風箏",p:18,t:"Sports & Leisure-1"},
+  {w:"song",z:"歌曲",p:18,t:"Sports & Leisure-1"},{w:"ride",z:"騎",p:18,t:"Sports & Leisure-1"},
+  {w:"badminton",z:"羽毛球",p:18,t:"Sports & Leisure-1"},{w:"book",z:"書本",p:18,t:"Sports & Leisure-1"},
+  {w:"watch",z:"看",p:18,t:"Sports & Leisure-1"},{w:"fly",z:"飛",p:18,t:"Sports & Leisure-1"},
+  {w:"bike",z:"腳踏車",p:18,t:"Sports & Leisure-1"},{w:"beach",z:"海邊",p:18,t:"Sports & Leisure-1"},
+  {w:"draw",z:"畫畫",p:18,t:"Sports & Leisure-1"},{w:"read",z:"讀",p:18,t:"Sports & Leisure-1"},
+  {w:"game",z:"遊戲",p:18,t:"Sports & Leisure-1"},{w:"toy",z:"玩具",p:18,t:"Sports & Leisure-1"},
+  {w:"run",z:"跑",p:18,t:"Sports & Leisure-1"},{w:"hit",z:"打擊",p:18,t:"Sports & Leisure-1"},
+  {w:"kick",z:"踢",p:18,t:"Sports & Leisure-1"},{w:"boat",z:"船",p:18,t:"Sports & Leisure-1"},
+  {w:"jump",z:"跳",p:18,t:"Sports & Leisure-1"},
+  {w:"bounce",z:"拍球",p:19,t:"Sports & Leisure-2"},{w:"tennis",z:"網球",p:19,t:"Sports & Leisure-2"},
+  {w:"camera",z:"照相機",p:19,t:"Sports & Leisure-2"},{w:"story",z:"故事",p:19,t:"Sports & Leisure-2"},
+  {w:"hockey",z:"曲棍球",p:19,t:"Sports & Leisure-2"},{w:"baseball",z:"棒球",p:19,t:"Sports & Leisure-2"},
+  {w:"picture",z:"圖畫",p:19,t:"Sports & Leisure-2"},{w:"guitar",z:"吉他",p:19,t:"Sports & Leisure-2"},
+  {w:"enjoy",z:"喜愛",p:19,t:"Sports & Leisure-2"},{w:"sport",z:"運動",p:19,t:"Sports & Leisure-2"},
+  {w:"hobby",z:"嗜好",p:19,t:"Sports & Leisure-2"},{w:"catch",z:"接住",p:19,t:"Sports & Leisure-2"},
+  {w:"radio",z:"收音機",p:19,t:"Sports & Leisure-2"},{w:"soccer",z:"足球",p:19,t:"Sports & Leisure-2"},
+  {w:"piano",z:"鋼琴",p:19,t:"Sports & Leisure-2"},{w:"throw",z:"丟",p:19,t:"Sports & Leisure-2"},
+  {w:"doll",z:"洋娃娃",p:20,t:"Sports & Leisure-3"},{w:"walk",z:"走",p:20,t:"Sports & Leisure-3"},
+  {w:"ball",z:"球",p:20,t:"Sports & Leisure-3"},{w:"bat",z:"球棒",p:20,t:"Sports & Leisure-3"},
+  {w:"favorite",z:"喜愛的",p:20,t:"Sports & Leisure-3"},{w:"listen",z:"聽",p:20,t:"Sports & Leisure-3"},
+  {w:"photo",z:"照片",p:20,t:"Sports & Leisure-3"},{w:"drive",z:"開車",p:20,t:"Sports & Leisure-3"},
+  {w:"basketball",z:"籃球",p:20,t:"Sports & Leisure-3"},{w:"swim",z:"游泳",p:20,t:"Sports & Leisure-3"},
+  {w:"monster",z:"怪物",p:21,t:"Toys"},{w:"robot",z:"機器人",p:21,t:"Toys"},
+  {w:"plane",z:"飛機",p:21,t:"Toys"},{w:"helicopter",z:"直昇機",p:21,t:"Toys"},
+  {w:"motorbike",z:"摩托車",p:21,t:"Toys"},{w:"train",z:"火車",p:21,t:"Toys"},
+  {w:"balloon",z:"氣球",p:21,t:"Toys"},{w:"car",z:"汽車",p:21,t:"Toys"},
+  {w:"alien",z:"外星人",p:21,t:"Toys"},
+  {w:"ship",z:"船",p:22,t:"Transport"},{w:"bus",z:"公車",p:22,t:"Transport"},
+  {w:"sea",z:"海",p:23,t:"The World Around Us"},{w:"street",z:"街",p:23,t:"The World Around Us"},
+  {w:"shell",z:"貝殼",p:23,t:"The World Around Us"},{w:"water",z:"水",p:23,t:"The World Around Us"},
+  {w:"sand",z:"沙子",p:23,t:"The World Around Us"},{w:"beach",z:"海灘",p:23,t:"The World Around Us"},
+  {w:"sun",z:"太陽",p:23,t:"The World Around Us"},{w:"tree",z:"樹",p:23,t:"The World Around Us"},
+  {w:"many",z:"很多",p:24,t:"Determiners"},{w:"that",z:"那",p:24,t:"Determiners"},
+  {w:"some",z:"一些",p:24,t:"Determiners"},{w:"those",z:"那些",p:24,t:"Determiners"},
+  {w:"these",z:"這些",p:24,t:"Determiners"},
+  {w:"happy",z:"開心的",p:25,t:"Adjectives-1"},{w:"ugly",z:"醜陋的",p:25,t:"Adjectives-1"},
+  {w:"funny",z:"有趣的",p:25,t:"Adjectives-1"},{w:"great",z:"極好的",p:25,t:"Adjectives-1"},
+  {w:"angry",z:"生氣的",p:25,t:"Adjectives-1"},{w:"long",z:"長的",p:25,t:"Adjectives-1"},
+  {w:"dirty",z:"骯髒的",p:25,t:"Adjectives-1"},{w:"good",z:"好的",p:25,t:"Adjectives-1"},
+  {w:"clean",z:"乾淨的",p:25,t:"Adjectives-1"},{w:"blue",z:"藍色的",p:25,t:"Adjectives-1"},
+  {w:"black",z:"黑色的",p:25,t:"Adjectives-1"},{w:"red",z:"紅色的",p:25,t:"Adjectives-1"},
+  {w:"big",z:"大的",p:25,t:"Adjectives-1"},{w:"sad",z:"難過的",p:25,t:"Adjectives-1"},
+  {w:"pink",z:"粉紅色的",p:25,t:"Adjectives-1"},{w:"new",z:"新的",p:25,t:"Adjectives-1"},
+  {w:"old",z:"舊的",p:25,t:"Adjectives-1"},
+  {w:"open",z:"開放的",p:26,t:"Adjectives-2"},{w:"purple",z:"紫色的",p:26,t:"Adjectives-2"},
+  {w:"silly",z:"傻的",p:26,t:"Adjectives-2"},{w:"orange",z:"橘色的",p:26,t:"Adjectives-2"},
+  {w:"scary",z:"恐怖的",p:26,t:"Adjectives-2"},{w:"short",z:"短的",p:26,t:"Adjectives-2"},
+  {w:"white",z:"白色的",p:26,t:"Adjectives-2"},{w:"beautiful",z:"美麗的",p:26,t:"Adjectives-2"},
+  {w:"correct",z:"正確的",p:26,t:"Adjectives-2"},{w:"green",z:"綠色的",p:26,t:"Adjectives-2"},
+  {w:"young",z:"年輕的",p:26,t:"Adjectives-2"},{w:"small",z:"小的",p:26,t:"Adjectives-2"},
+  {w:"yellow",z:"黃色的",p:26,t:"Adjectives-2"},{w:"brown",z:"咖啡色的",p:26,t:"Adjectives-2"},
+  {w:"today",z:"今天",p:27,t:"Adverbs"},{w:"again",z:"再一次",p:27,t:"Adverbs"},
+  {w:"home",z:"家",p:27,t:"Adverbs"},{w:"there",z:"那裡",p:27,t:"Adverbs"},
+  {w:"too",z:"也",p:27,t:"Adverbs"},{w:"very",z:"非常",p:27,t:"Adverbs"},
+  {w:"now",z:"現在",p:27,t:"Adverbs"},{w:"here",z:"這裡",p:27,t:"Adverbs"},
+  {w:"not",z:"不是",p:27,t:"Adverbs"},{w:"really",z:"真地",p:27,t:"Adverbs"},
+  {w:"but",z:"但是",p:28,t:"Conjunctions"},{w:"or",z:"或是",p:28,t:"Conjunctions"},
+  {w:"with",z:"和…一起",p:28,t:"Prepositions"},{w:"for",z:"給",p:28,t:"Prepositions"},
+  {w:"from",z:"從",p:28,t:"Prepositions"},{w:"on",z:"在上面",p:28,t:"Prepositions"},
+  {w:"behind",z:"在後面",p:28,t:"Prepositions"},{w:"under",z:"在下面",p:28,t:"Prepositions"},
+  {w:"near",z:"在附近",p:28,t:"Prepositions"},
+  {w:"they",z:"他們",p:29,t:"Pronouns-1"},{w:"we",z:"我們",p:29,t:"Pronouns-1"},
+  {w:"her",z:"她(受格)",p:29,t:"Pronouns-1"},{w:"them",z:"他們(受格)",p:29,t:"Pronouns-1"},
+  {w:"him",z:"他(受格)",p:29,t:"Pronouns-1"},{w:"he",z:"他",p:29,t:"Pronouns-1"},
+  {w:"you",z:"你",p:29,t:"Pronouns-1"},{w:"me",z:"我(受格)",p:29,t:"Pronouns-1"},
+  {w:"she",z:"她",p:29,t:"Pronouns-1"},
+  {w:"theirs",z:"他們的",p:30,t:"Pronouns-2"},{w:"their",z:"他們的(所有格)",p:30,t:"Pronouns-2"},
+  {w:"ours",z:"我們的",p:30,t:"Pronouns-2"},{w:"our",z:"我們的(所有格)",p:30,t:"Pronouns-2"},
+  {w:"hers",z:"她的",p:30,t:"Pronouns-2"},{w:"his",z:"他的",p:30,t:"Pronouns-2"},
+  {w:"yours",z:"你的",p:30,t:"Pronouns-2"},{w:"your",z:"你的(所有格)",p:30,t:"Pronouns-2"},
+  {w:"mine",z:"我的",p:30,t:"Pronouns-2"},{w:"my",z:"我的(所有格)",p:30,t:"Pronouns-2"},
+  {w:"throw",z:"丟",p:31,t:"Verbs-1"},{w:"write",z:"寫",p:31,t:"Verbs-1"},
+  {w:"say",z:"說",p:31,t:"Verbs-1"},{w:"catch",z:"接",p:31,t:"Verbs-1"},
+  {w:"see",z:"看",p:31,t:"Verbs-1"},{w:"tell",z:"告訴",p:31,t:"Verbs-1"},
+  {w:"run",z:"跑",p:31,t:"Verbs-1"},{w:"eat",z:"吃",p:31,t:"Verbs-1"},
+  {w:"draw",z:"畫",p:31,t:"Verbs-1"},{w:"get",z:"得到",p:31,t:"Verbs-1"},
+  {w:"come",z:"來",p:31,t:"Verbs-1"},{w:"put",z:"放",p:31,t:"Verbs-1"},
+  {w:"know",z:"知道",p:31,t:"Verbs-1"},
+  {w:"find",z:"發現",p:32,t:"Verbs-2"},{w:"hold",z:"拿著",p:32,t:"Verbs-2"},
+  {w:"wear",z:"穿",p:32,t:"Verbs-2"},{w:"drive",z:"開車",p:32,t:"Verbs-2"},
+  {w:"have",z:"有",p:32,t:"Verbs-2"},{w:"choose",z:"選擇",p:32,t:"Verbs-2"},
+  {w:"read",z:"讀",p:32,t:"Verbs-2"},{w:"sing",z:"唱",p:32,t:"Verbs-2"},
+  {w:"make",z:"製作",p:32,t:"Verbs-2"},{w:"drink",z:"喝",p:32,t:"Verbs-2"},
+  {w:"give",z:"給",p:32,t:"Verbs-2"},{w:"sleep",z:"睡覺",p:32,t:"Verbs-2"},
+  {w:"learn",z:"學習",p:33,t:"Verbs-3"},{w:"clap",z:"拍手",p:33,t:"Verbs-3"},
+  {w:"listen",z:"聽",p:33,t:"Verbs-3"},{w:"count",z:"數",p:33,t:"Verbs-3"},
+  {w:"spell",z:"拼字",p:33,t:"Verbs-3"},{w:"understand",z:"了解",p:33,t:"Verbs-3"},
+  {w:"swim",z:"游泳",p:33,t:"Verbs-3"},{w:"ride",z:"騎車",p:33,t:"Verbs-3"},
+  {w:"tick",z:"打勾",p:34,t:"Verbs-4"},{w:"like",z:"喜歡",p:34,t:"Verbs-4"},
+  {w:"show",z:"展示",p:34,t:"Verbs-4"},{w:"wave",z:"揮",p:34,t:"Verbs-4"},
+  {w:"jump",z:"跳",p:34,t:"Verbs-4"},{w:"close",z:"關",p:34,t:"Verbs-4"},
+  {w:"walk",z:"走路",p:34,t:"Verbs-4"},{w:"cross",z:"橫越",p:34,t:"Verbs-4"},
+  {w:"talk",z:"說",p:34,t:"Verbs-4"},{w:"test",z:"考試",p:34,t:"Verbs-4"},
+  {w:"want",z:"想要",p:34,t:"Verbs-4"},{w:"ask",z:"問",p:34,t:"Verbs-4"},
+  {w:"start",z:"開始",p:34,t:"Verbs-4"},{w:"add",z:"加",p:34,t:"Verbs-4"},
+  {w:"kick",z:"踢",p:34,t:"Verbs-4"},
+  {w:"love",z:"愛",p:35,t:"Verbs-5"},{w:"bounce",z:"拍球",p:35,t:"Verbs-5"},
+  {w:"answer",z:"回答",p:35,t:"Verbs-5"},{w:"enjoy",z:"享受",p:35,t:"Verbs-5"},
+  {w:"paint",z:"繪畫",p:35,t:"Verbs-5"},{w:"complete",z:"完成",p:35,t:"Verbs-5"},
+  {w:"live",z:"住",p:35,t:"Verbs-5"},{w:"clean",z:"打掃",p:35,t:"Verbs-5"},
+  {w:"point",z:"指出",p:35,t:"Verbs-5"},{w:"try",z:"試",p:35,t:"Verbs-5"},
+  {w:"watch",z:"看",p:35,t:"Verbs-5"},{w:"smile",z:"微笑",p:35,t:"Verbs-5"},
+  {w:"stop",z:"停止",p:35,t:"Verbs-5"},
+  {w:"can",z:"可以",p:36,t:"Modals"},{w:"what",z:"什麼",p:36,t:"Question Words"},
+  {w:"who",z:"誰",p:36,t:"Question Words"},{w:"how",z:"如何",p:36,t:"Question Words"},
+  {w:"whose",z:"誰的",p:36,t:"Question Words"},{w:"where",z:"哪裡",p:36,t:"Question Words"},
+  {w:"which",z:"哪個",p:36,t:"Question Words"},
+];
+
+const seen = new Set();
+const ALL_WORDS = RAW.filter(({w,p})=>{
+  const k=`${p}-${w.toLowerCase()}`;
+  if(!/^[a-zA-Z]+$/.test(w)||seen.has(k)) return false;
+  seen.add(k); return true;
+});
+
+const PAGE_META = {
+  17:{label:"School 3",emoji:"🏫",color:"#E74C3C",bg:"#FDEDEC"},
+  18:{label:"Sports & Leisure 1",emoji:"⚽",color:"#E67E22",bg:"#FEF5E7"},
+  19:{label:"Sports & Leisure 2",emoji:"🎾",color:"#F39C12",bg:"#FEFDE7"},
+  20:{label:"Sports & Leisure 3",emoji:"🏀",color:"#27AE60",bg:"#EAFAF1"},
+  21:{label:"Toys",emoji:"🤖",color:"#2980B9",bg:"#EBF5FB"},
+  22:{label:"Transport",emoji:"🚌",color:"#8E44AD",bg:"#F5EEF8"},
+  23:{label:"The World Around Us",emoji:"🌊",color:"#16A085",bg:"#E8F8F5"},
+  24:{label:"Determiners",emoji:"👆",color:"#2C3E50",bg:"#EBF0F3"},
+  25:{label:"Adjectives 1",emoji:"🌈",color:"#C0392B",bg:"#FDEDEC"},
+  26:{label:"Adjectives 2",emoji:"🎨",color:"#884EA0",bg:"#F5EEF8"},
+  27:{label:"Adverbs",emoji:"💨",color:"#1A5276",bg:"#EBF5FB"},
+  28:{label:"Prepositions",emoji:"📍",color:"#117A65",bg:"#E8F8F5"},
+  29:{label:"Pronouns 1",emoji:"👤",color:"#6E2F8E",bg:"#F5EEF8"},
+  30:{label:"Pronouns 2",emoji:"👥",color:"#1F618D",bg:"#EBF5FB"},
+  31:{label:"Verbs 1",emoji:"🏃",color:"#1E8449",bg:"#EAFAF1"},
+  32:{label:"Verbs 2",emoji:"✍️",color:"#2471A3",bg:"#EBF5FB"},
+  33:{label:"Verbs 3",emoji:"🎵",color:"#B7950B",bg:"#FEFDE7"},
+  34:{label:"Verbs 4",emoji:"💪",color:"#A04000",bg:"#FEF5E7"},
+  35:{label:"Verbs 5",emoji:"🌟",color:"#7D6608",bg:"#FEFDE7"},
+  36:{label:"Modals & Questions",emoji:"❓",color:"#4A235A",bg:"#F5EEF8"},
+};
+const PAGES = [...new Set(ALL_WORDS.map(w=>w.p))].sort((a,b)=>a-b);
+
+// ══ 音效 ══
+let audioCtx = null;
+function getCtx(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function playSuccess(){
+  const c=getCtx();
+  [523,659,784].forEach((f,i)=>{
+    const o=c.createOscillator(),g=c.createGain();
+    o.connect(g);g.connect(c.destination);o.frequency.value=f;o.type="sine";
+    const t=c.currentTime+i*0.11;
+    g.gain.setValueAtTime(0.25,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+    o.start(t);o.stop(t+0.22);
+  });
+}
+function playError(){
+  const c=getCtx(),o=c.createOscillator(),g=c.createGain();
+  o.connect(g);g.connect(c.destination);o.frequency.value=160;o.type="sawtooth";
+  g.gain.setValueAtTime(0.28,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.28);
+  o.start();o.stop(c.currentTime+0.28);
+}
+function playComplete(){
+  const c=getCtx();
+  [523,587,659,698,784,880].forEach((f,i)=>{
+    const o=c.createOscillator(),g=c.createGain();
+    o.connect(g);g.connect(c.destination);o.frequency.value=f;
+    const t=c.currentTime+i*0.09;
+    g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.28);
+    o.start(t);o.stop(t+0.28);
+  });
+}
+function speakWord(w){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(w);
+  u.lang="en-US";u.rate=0.82;u.pitch=1.1;
+  window.speechSynthesis.speak(u);
+}
+
+// ══ Confetti ══
+function spawnConfetti(){
+  const c=document.createElement('div');
+  c.className='confetti-container';
+  const colors=["#FF6B6B","#FFD93D","#55EFC4","#74B9FF","#FD79A8","#A29BFE"];
+  for(let i=0;i<22;i++){
+    const p=document.createElement('div');
+    p.className='confetti-piece';
+    const size=7+Math.random()*8;
+    p.style.cssText=`left:${Math.random()*100}%;width:${size}px;height:${size}px;background:${colors[i%6]};animation:cfFall ${0.9+Math.random()*0.7}s ${Math.random()*0.4}s ease-in forwards;`;
+    c.appendChild(p);
+  }
+  document.body.appendChild(c);
+  setTimeout(()=>c.remove(),1800);
+}
+
+// ══ 狀態 ══
+let mode='menu', selPage=null, wordList=[], wordIdx=0;
+let letterStates=[], mistakes=0, score=0;
+
+function render(){ document.getElementById('app').innerHTML=''; buildUI(); }
+
+// ══ 主選單 ══
+function buildMenu(){
+  const app=document.getElementById('app');
+  app.innerHTML=`
+    <div style="text-align:center;margin-bottom:28px;">
+      <div class="float" style="font-size:72px;">🎧</div>
+      <h1>聽音拼字</h1>
+      <h2>YMCA Starters</h2>
+      <div style="font-size:14px;color:#a0a8c0;margin-top:6px;">P17–P36 · 共${ALL_WORDS.length}個單字 · ${PAGES.length}個關卡</div>
+    </div>
+    <div id="units" style="width:100%;max-width:480px;"></div>
+  `;
+  const units=document.getElementById('units');
+  PAGES.forEach((page,i)=>{
+    const m=PAGE_META[page];
+    const count=ALL_WORDS.filter(w=>w.p===page).length;
+    const card=document.createElement('div');
+    card.className='unit-card';
+    card.style.cssText=`background:${m.bg};border-color:${m.color}33;box-shadow:0 4px 16px ${m.color}22;animation-delay:${i*0.04}s;`;
+    card.innerHTML=`
+      <div style="font-size:34px;min-width:42px;text-align:center;">${m.emoji}</div>
+      <div style="flex:1;">
+        <div class="unit-label" style="color:${m.color};">P${page} · ${m.label}</div>
+        <div class="unit-sub">${count} 個單字</div>
+      </div>
+      <div class="start-tag" style="background:${m.color};">開始 →</div>
+    `;
+    card.onclick=()=>startUnit(page);
+    units.appendChild(card);
+  });
+}
+
+// ══ 開始關卡 ══
+function startUnit(page){
+  selPage=page;
+  wordList=ALL_WORDS.filter(w=>w.p===page);
+  wordIdx=0; score=0; mistakes=0;
+  mode='spell';
+  buildSpell();
+  setTimeout(()=>speakWord(wordList[0].w),400);
+}
+
+// ══ 拼字畫面 ══
+function buildSpell(){
+  const word=wordList[wordIdx];
+  const m=PAGE_META[selPage];
+  letterStates=word.w.toLowerCase().split('').map(c=>({char:c,status:'empty'}));
+  const app=document.getElementById('app');
+  const pct=Math.round((wordIdx/wordList.length)*100);
+  app.innerHTML=`
+    <div class="topbar">
+      <button class="nbtn" id="backBtn" style="background:#f0f0ff;color:#6c63ff;">← 回選單</button>
+      <div style="font-family:'Fredoka One',cursive;font-size:15px;color:${m.color};">${m.emoji} P${selPage} · ${wordIdx+1}/${wordList.length}</div>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar" style="width:${pct}%;background:linear-gradient(90deg,${m.color},${m.color}99);"></div>
+    </div>
+    <div class="card" style="background:${m.color};box-shadow:0 16px 48px ${m.color}88;">
+      <div class="float" style="font-size:56px;margin-bottom:8px;">${m.emoji}</div>
+      <div class="card-zh">${word.z}</div>
+      <div class="card-sub">${word.t}</div>
+    </div>
+    <button class="speak-btn" id="speakBtn" style="background:${m.bg};color:${m.color};border:2px solid ${m.color}55;">🔊 聽發音</button>
+    <div class="boxes" id="boxes"></div>
+    <div class="hint">${word.w.length} 個字母</div>
+    <div class="stars-hint" id="starsHint">✨ 零失誤可得 ⭐⭐⭐</div>
+    <div id="wordDoneMsg"></div>
+  `;
+  document.getElementById('backBtn').onclick=()=>{mode='menu';buildMenu();};
+  document.getElementById('speakBtn').onclick=()=>{
+    const btn=document.getElementById('speakBtn');
+    btn.classList.add('pulsing');btn.textContent='🔊 播放中...';
+    speakWord(word.w);
+    setTimeout(()=>{btn.classList.remove('pulsing');btn.innerHTML='🔊 聽發音';},1200);
+  };
+  buildBoxes();
+  setTimeout(()=>focusFirst(),80);
+}
+
+function buildBoxes(){
+  const boxes=document.getElementById('boxes');
+  if(!boxes) return;
+  boxes.innerHTML='';
+  letterStates.forEach((l,i)=>{
+    const inp=document.createElement('input');
+    inp.type='text'; inp.maxLength=2; inp.className='letter-box';
+    inp.dataset.idx=i;
+    if(l.status==='correct'){inp.value=l.char.toUpperCase();inp.readOnly=true;inp.classList.add('correct');}
+    else {inp.value='';}
+    if(l.status==='shake') inp.classList.add('shake');
+    inp.addEventListener('input',e=>handleKey(i,e.target.value));
+    inp.addEventListener('click',()=>{
+      const first=letterStates.findIndex(x=>x.status!=='correct');
+      if(first!==-1&&i!==first) focusBox(first);
+    });
+    boxes.appendChild(inp);
+  });
+}
+
+function focusFirst(){ focusBox(letterStates.findIndex(l=>l.status!=='correct')); }
+function focusBox(i){
+  const boxes=document.querySelectorAll('.letter-box');
+  if(boxes[i]) boxes[i].focus();
+}
+
+function handleKey(idx,val){
+  const typed=val.slice(-1).toLowerCase();
+  if(!typed||!/[a-z]/.test(typed)) return;
+  const correct=letterStates[idx].char;
+  if(typed===correct){
+    playSuccess();
+    letterStates[idx].status='correct';
+    buildBoxes();
+    const allDone=letterStates.every(l=>l.status==='correct');
+    if(allDone){
+      playComplete(); spawnConfetti();
+      const stars=mistakes===0?3:mistakes===1?2:1;
+      score+=stars;
+      const msg=document.getElementById('wordDoneMsg');
+      if(msg) msg.innerHTML=`<div class="word-done" style="background:linear-gradient(135deg,${PAGE_META[selPage].color},#fd79a8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${mistakes===0?'🌟 完美！':'🎉 答對！'} 繼續下一個！</div>`;
+      setTimeout(()=>{
+        const nextIdx=wordIdx+1;
+        if(nextIdx>=wordList.length){ mode='result'; buildResult(); }
+        else { wordIdx=nextIdx; mistakes=0; buildSpell(); setTimeout(()=>speakWord(wordList[nextIdx].w),300); }
+      },1700);
+    } else {
+      const next=letterStates.findIndex((l,i)=>i>idx&&l.status!=='correct');
+      if(next!==-1) setTimeout(()=>focusBox(next),30);
+    }
+  } else {
+    playError(); mistakes++;
+    letterStates[idx].status='shake';
+    buildBoxes();
+    const hint=document.getElementById('starsHint');
+    if(hint) hint.textContent=mistakes===1?'一次錯誤 → ⭐⭐':'兩次以上 → ⭐';
+    setTimeout(()=>{
+      letterStates[idx].status='empty';
+      buildBoxes();
+      focusBox(idx);
+    },480);
+  }
+}
+
+// ══ 結果 ══
+function buildResult(){
+  const m=PAGE_META[selPage];
+  const maxScore=wordList.length*3;
+  const pct=score/maxScore;
+  const trophy=pct>=0.9?'🏆':pct>=0.6?'🥇':'🎮';
+  const msg=pct>=1?'🌟 完美無缺！':pct>=0.7?'👏 非常棒！再接再厲！':'💪 繼續練習就會進步！';
+  document.getElementById('app').innerHTML=`
+    <div style="text-align:center;width:100%;max-width:440px;">
+      <div class="float" style="font-size:80px;margin-bottom:12px;">${trophy}</div>
+      <h1>關卡完成！</h1>
+      <div style="font-size:14px;color:#a0a8c0;margin-bottom:8px;">${m.emoji} P${selPage} · ${m.label}</div>
+      <div class="result-box" style="background:${m.bg};border:3px solid ${m.color}44;">
+        <div class="result-score" style="color:${m.color};">${score} <span style="font-size:28px;color:#aaa;">/ ${maxScore}</span></div>
+        <div style="font-size:16px;color:#888;">⭐ 得分（滿分 ${wordList.length} 字 × 3 星）</div>
+        <div style="font-size:18px;font-weight:800;color:${m.color};margin-top:4px;">${msg}</div>
+      </div>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
+        <button class="nbtn" id="retryBtn" style="background:${m.color};color:#fff;font-size:17px;padding:13px 28px;">🔄 再挑戰一次</button>
+        <button class="nbtn" id="menuBtn" style="background:#f0f0ff;color:#6c63ff;font-size:17px;padding:13px 28px;">🏠 選其他關卡</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('retryBtn').onclick=()=>startUnit(selPage);
+  document.getElementById('menuBtn').onclick=()=>{mode='menu';buildMenu();};
+}
+
+// ══ 啟動 ══
+buildMenu();
+</script>
+</body>
+</html>
