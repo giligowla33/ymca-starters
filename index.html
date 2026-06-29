@@ -173,6 +173,21 @@ const RAW = [
   {w:"who",z:"誰",p:36,t:"Question Words"},{w:"how",z:"如何",p:36,t:"Question Words"},
   {w:"whose",z:"誰的",p:36,t:"Question Words"},{w:"where",z:"哪裡",p:36,t:"Question Words"},
   {w:"which",z:"哪個",p:36,t:"Question Words"},
+  // ★ P37 天氣 & 星期（新增單元）
+  {w:"Sunny",z:"晴天",p:37,t:"Weather"},
+  {w:"Cloudy",z:"多雲",p:37,t:"Weather"},
+  {w:"Rainy",z:"下雨",p:37,t:"Weather"},
+  {w:"Windy",z:"有風",p:37,t:"Weather"},
+  {w:"Stormy",z:"暴風雨",p:37,t:"Weather"},
+  {w:"Snowy",z:"下雪",p:37,t:"Weather"},
+  {w:"Foggy",z:"有霧",p:37,t:"Weather"},
+  {w:"Monday",z:"星期一",p:37,t:"Days of the Week"},
+  {w:"Tuesday",z:"星期二",p:37,t:"Days of the Week"},
+  {w:"Wednesday",z:"星期三",p:37,t:"Days of the Week"},
+  {w:"Thursday",z:"星期四",p:37,t:"Days of the Week"},
+  {w:"Friday",z:"星期五",p:37,t:"Days of the Week"},
+  {w:"Saturday",z:"星期六",p:37,t:"Days of the Week"},
+  {w:"Sunday",z:"星期日",p:37,t:"Days of the Week"},
 ];
 
 const seen = new Set();
@@ -203,6 +218,7 @@ const PAGE_META = {
   34:{label:"Verbs 4",emoji:"💪",color:"#A04000",bg:"#FEF5E7"},
   35:{label:"Verbs 5",emoji:"🌟",color:"#7D6608",bg:"#FEFDE7"},
   36:{label:"Modals & Questions",emoji:"❓",color:"#4A235A",bg:"#F5EEF8"},
+  37:{label:"Weather & Days",emoji:"🌤️",color:"#0984E3",bg:"#EBF5FB"},
 };
 const PAGES = [...new Set(ALL_WORDS.map(w=>w.p))].sort((a,b)=>a-b);
 
